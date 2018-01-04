@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from scrapy.selector import Selector
 from urllib import parse
-#import pymongo
+from bs4 import BeautifulSoup
 from jianshuArticle.items import JianshuarticleItem, ArticleReviewItem
 #from selenium import webdriver
 #from scrapy.http import TextResponse
@@ -20,7 +20,7 @@ class jianshuArticleSpider(scrapy.spiders.Spider):
             'MONGO_DATEBASE':'zheyibu'
             }
         
-    for i in range(1,202):
+    for i in range(1,3):
         start_urls.append('https://www.jianshu.com/c/Jgq3Wc?order_by=added_at&page={}'.format(i))
 #    print(start_urls)
     
@@ -42,7 +42,18 @@ class jianshuArticleSpider(scrapy.spiders.Spider):
         if response.status == 200:
             articleid = response.meta.get('articleid')
             content = parse.unquote(response.selector.xpath('//div[@class="article"]/div[@class="show-content"]').extract_first())
-            content = content.replace("data-original-src","src",10)
+            
+            soup = BeautifulSoup(content,"html.parser")
+            for img in soup.findAll('img'):
+                newtag =  soup.new_tag('img',src=img['data-original-src'],style='width: 623px;cursor: zoom-in;')
+                print (newtag)
+                img.replaceWith(newtag)
+            
+            for div in soup.find_all('div', "image-container-fill"):
+                div.replaceWith("")
+                
+            content = soup.prettify()
+            
             datetimestr = response.xpath('//div[@class="article"]/div[@class="author"]/div[@class="info"]/div[@class="meta"]/span[@class="publish-time"]/text()').extract_first().strip('\n')
 #            datetime_object = datetime.strptime(datetimestr, '%b %d %Y %I:%M%p')
             date = datetimestr.split(' ')[0].replace('.','-')
