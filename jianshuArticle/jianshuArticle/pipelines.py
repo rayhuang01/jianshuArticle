@@ -47,17 +47,18 @@ class JianshuarticlePipeline(object):
             raise DropItem('Empty item')
             
 class MyImagePipeline(ImagesPipeline):
-	def get_media_requests(self,item,info):
-		if(item.get('image_urls')):
-			for image_url in item['image_urls']:
-				yield Request(image_url)
-		else:
-			return item
-	def item_completed(Self,results,item,info):
-		if(not item.get('image_urls')):
-			return item
-		image_paths = [x['path'] for ok, x in results if ok]
-		if not image_paths:
-			raise DropItem('Item contains no images')
-		item['image_paths'] = image_paths
-		return item
+    def get_media_requests(self,item,info):
+        if(item.get('image_urls')):
+            for image_url in item['image_urls']:
+                url= "http:"+ image_url
+                yield Request(url)
+        else:
+            return item
+    def item_completed(Self,results,item,info):
+        if(not item.get('image_urls')):
+            return item
+        image_paths = [x['path'] for ok, x in results if ok]
+        if not image_paths:
+            raise DropItem('Item contains no images')
+        item['image_paths'] = image_paths
+        return item

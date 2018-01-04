@@ -2,6 +2,7 @@ import scrapy
 import json
 from datetime import datetime
 from scrapy.selector import Selector
+from urllib import parse
 #import pymongo
 from jianshuArticle.items import JianshuarticleItem, ArticleReviewItem
 #from selenium import webdriver
@@ -19,7 +20,7 @@ class jianshuArticleSpider(scrapy.spiders.Spider):
             'MONGO_DATEBASE':'zheyibu'
             }
         
-    for i in range(1,3):
+    for i in range(1,202):
         start_urls.append('https://www.jianshu.com/c/Jgq3Wc?order_by=added_at&page={}'.format(i))
 #    print(start_urls)
     
@@ -40,7 +41,8 @@ class jianshuArticleSpider(scrapy.spiders.Spider):
     def parse_article(self, response):
         if response.status == 200:
             articleid = response.meta.get('articleid')
-            content = response.selector.xpath('//div[@class="article"]').extract_first()
+            content = parse.unquote(response.selector.xpath('//div[@class="article"]/div[@class="show-content"]').extract_first())
+            content = content.replace("data-original-src","src",10)
             datetimestr = response.xpath('//div[@class="article"]/div[@class="author"]/div[@class="info"]/div[@class="meta"]/span[@class="publish-time"]/text()').extract_first().strip('\n')
 #            datetime_object = datetime.strptime(datetimestr, '%b %d %Y %I:%M%p')
             date = datetimestr.split(' ')[0].replace('.','-')
@@ -53,7 +55,7 @@ class jianshuArticleSpider(scrapy.spiders.Spider):
             item['author'] = author
             item['date'] = date
             item['title'] = response.selector.xpath('//div[@class="article"]/h1[@class="title"]/text()').extract_first()
-            item['image_urls'] = ["https:"+ src for src in response.xpath('//div[@class="article"]//img/@src').extract()]
+            item['image_urls'] = [parse.unquote(src) for src in response.xpath('//div[@class="article"]//img/@data-original-src').extract()]
 
             yield item
             
@@ -94,8 +96,8 @@ class jianshuArticleSpider(scrapy.spiders.Spider):
                     review = comment['compiled_content']
                     commentdatestr = comment['created_at']
 #                    datetime_object = datetime.strptime(commentdatestr, '%b %d %Y %I:%M%p')
-                    commentdate = commentdatestr.split(' ')[0].replace('.','-')
-                    reviewid = comment['id']
+                    commentdate = commentdatestr.split('T')[0].replace('.','-')
+                    reviewid = str(comment['id'])
                     
                     user = comment['user']
                     if user:
@@ -119,8 +121,8 @@ class jianshuArticleSpider(scrapy.spiders.Spider):
                                 child_review = child['compiled_content']
                                 child_commentdatestr = child['created_at']
 #                                child_datetime_object = datetime.strptime(child_commentdatestr, '%b %d %Y %I:%M%p')
-                                child_commentdate = child_commentdatestr.split(' ')[0].replace('.','-')
-                                child_reviewid = child['id']
+                                child_commentdate = child_commentdatestr.split('T')[0].replace('.','-')
+                                child_reviewid = str(child['id'])
                                 
                                 child_user = child['user']
                                 if child_user:
